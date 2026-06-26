@@ -1,0 +1,21 @@
+name: ns_obx_example
+description: "Demonstrates ns_obx core features: reactive variables, collections, nullable types, signal events, and auto-dispose."
+publish_to: 'none'
+version: 1.0.0
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: ">=3.13.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  ns_obx:
+    path: ../
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
