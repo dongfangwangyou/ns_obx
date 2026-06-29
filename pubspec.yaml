@@ -4,7 +4,7 @@ description: >
   从 GetX 剥离的精细粒度响应式方案，支持 Obx、响应式变量、集合类型。
   极小包体积（<15KB）、零依赖、类型安全。
 version: 1.0.3
-homepage: https://pub.dev/packages/ns_obx
+homepage: https://github.com/dongfangwangyou/ns_obx
 repository: https://github.com/dongfangwangyou/ns_obx
 issue_tracker: https://github.com/dongfangwangyou/ns_obx/issues
 publish_to: https://pub.dev
