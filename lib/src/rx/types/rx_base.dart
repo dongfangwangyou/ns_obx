@@ -11,6 +11,10 @@ abstract class _RxImpl<T> extends RxInterface<T>
     initializeValue(initial);
   }
 
+  /// Sends an error event to all listeners of this Rx.
+  ///
+  /// Unlike setting [value], this does not change the current value; it only
+  /// notifies subscribers through the underlying [stream].
   void addError(Object error, [StackTrace? stackTrace]) {
     subject.emitError(error, stackTrace);
   }
@@ -74,6 +78,11 @@ abstract class _RxImpl<T> extends RxInterface<T>
 /// 自定义类型的响应式包装类
 /// 用于 Dart 原生类型之外的自定义类型，如 User().obs 会使用 `Rx` 作为包装
 class Rx<T> extends _RxImpl<T> {
+  /// Creates an [Rx] wrapping [initial].
+  ///
+  /// Use the `.obs` extension on primitives, or `Rx<T>(value)` for custom
+  /// types. The reactive value can be read via [value] and updated through
+  /// [value], [update], or [call].
   Rx(super.initial);
 
   /// 创建一个空的 Rx 对象（仅适用于可空类型）
@@ -99,6 +108,7 @@ class Rx<T> extends _RxImpl<T> {
 
 /// 可空类型的响应式包装类
 class RxNullable<T> extends Rx<T?> {
+  /// Creates a nullable [Rx] holding an optional initial value.
   RxNullable([super.initial]);
 
   /// 检查值是否为 null

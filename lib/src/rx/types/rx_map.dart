@@ -14,6 +14,7 @@ extension RxMapExtension<K, V> on Map<K, V> {
 
 /// 响应式映射类，类似 `Map<K, V>` 但具有响应式能力
 class RxMap<K, V> extends RxCollection<Map<K, V>> with MapMixin<K, V> {
+  /// Creates a reactive map wrapping a copy of [initial].
   RxMap([Map<K, V> initial = const {}]) {
     initializeValue(Map.from(initial));
   }

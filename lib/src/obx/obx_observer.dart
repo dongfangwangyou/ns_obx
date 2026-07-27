@@ -12,6 +12,7 @@ import '../signals/signal.dart';
 /// bindStream、select 等上游订阅在 Rx 侧走 [ReactiveMixin.linkSubscription]，
 /// 不进入 [_dependencies]。
 class ObxObserver implements RxInterface<void> {
+  /// Creates an observer that calls [onNotify] whenever a tracked Rx changes.
   ObxObserver([void Function()? onNotify]) : _onNotify = onNotify;
   final List<void Function()> _listenCallbacks = [];
   final Map<Signal<dynamic>, SignalSubscription<dynamic>> _dependencies = {};

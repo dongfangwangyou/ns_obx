@@ -41,7 +41,7 @@
 
 ```yaml
 dependencies:
-  ns_obx: ^1.0.5
+  ns_obx: ^1.0.6
 ```
 
 ```bash

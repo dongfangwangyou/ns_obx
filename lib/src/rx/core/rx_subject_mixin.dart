@@ -10,6 +10,8 @@ import 'rx_interface.dart';
 /// 实现 [RxProxyContract]：Dependency 为空操作，Notifier 基于 subject。
 /// Proxy 依赖表仅由 ObxObserver 维护。
 mixin RxSubjectMixin<T> implements RxProxyContract<T> {
+  /// The underlying [Signal] that broadcasts value changes and manages
+  /// listeners for this Rx.
   @protected
   Signal<T> subject = Signal<T>();
 

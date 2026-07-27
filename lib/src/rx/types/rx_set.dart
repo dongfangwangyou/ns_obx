@@ -14,6 +14,7 @@ extension RxSetExtension<E> on Set<E> {
 
 /// 响应式集合类，类似 `Set<E>` 但具有响应式能力
 class RxSet<E> extends RxCollection<Set<E>> with SetMixin<E> {
+  /// Creates a reactive set wrapping a copy of [initial].
   RxSet([Set<E> initial = const {}]) {
     initializeValue(Set.from(initial));
   }

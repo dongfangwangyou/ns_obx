@@ -227,7 +227,7 @@ ns_obx（Controller 内的字段级 Rx + Obx）
 
 ```yaml
 dependencies:
-  ns_obx: ^1.0.5
+  ns_obx: ^1.0.6
 ```
 
 **最小示例：**
@@ -289,7 +289,7 @@ flutter run
 
 ## 8. 现状：1.0.1 带来了什么？
 
-**[ns_obx](https://pub.dev/packages/ns_obx)** 当前推荐版本 **1.0.5**：
+**[ns_obx](https://pub.dev/packages/ns_obx)** 当前推荐版本 **1.0.6**：
 
 | 模块      | 内容                                                       |
 |---------|----------------------------------------------------------|
@@ -319,7 +319,7 @@ ns_obx 不做全家桶，只把这三件事做到极致轻量地做好。
 
 ```yaml
 dependencies:
-  ns_obx: ^1.0.5
+  ns_obx: ^1.0.6
 ```
 
 ---

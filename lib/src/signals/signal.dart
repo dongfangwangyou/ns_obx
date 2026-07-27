@@ -4,12 +4,19 @@ import 'dart:async';
 /// 语法类似 [StreamController]，但使用简单的回调方式工作
 /// 每个事件只调用一个函数，没有缓冲区，内存消耗极低
 class Signal<T> {
-  /// 生命周期回调
-  final void Function()? onListen; // 当有新订阅者时触发
-  final void Function()? onPause; // 当订阅者暂停时触发
-  final void Function()? onResume; // 当订阅者恢复时触发
-  final FutureOr<void> Function()? onCancel; // 当订阅者取消时触发
+  /// Called when the first listener is added.
+  final void Function()? onListen;
 
+  /// Called when a listener pauses its subscription.
+  final void Function()? onPause;
+
+  /// Called when a listener resumes its subscription.
+  final void Function()? onResume;
+
+  /// Called when a listener cancels its subscription.
+  final FutureOr<void> Function()? onCancel;
+
+  /// Creates a [Signal] with optional lifecycle callbacks.
   Signal({this.onListen, this.onPause, this.onResume, this.onCancel});
 
   /// 订阅者列表（null 表示已关闭）
@@ -201,14 +208,23 @@ class Signal<T> {
 /// [SignalSubscription] 信号订阅服务
 class SignalSubscription<T> implements StreamSubscription<T> {
   final bool Function(SignalSubscription<T> subs) _detach;
+
+  /// Called when this subscription is paused.
   final void Function()? onPause;
+
+  /// Called when this subscription is resumed.
   final void Function()? onResume;
+
+  /// Called when this subscription is cancelled.
   final FutureOr<void> Function()? onCancel;
 
+  /// Creates a subscription with lifecycle callbacks.
   SignalSubscription(this._detach,
       {this.onPause, this.onResume, this.onCancel});
 
   bool _isPaused = false;
+
+  /// Whether the subscription should be cancelled after the first error.
   bool? cancelOnError = false;
   void Function(T data)? _data;
   void Function(Object error, StackTrace stackTrace)? _onError;

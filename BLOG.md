@@ -248,7 +248,7 @@ Clean architecture + fine-grained UI updates
 
 ```yaml
 dependencies:
-  ns_obx: ^1.0.5
+  ns_obx: ^1.0.6
 ```
 
 **Minimal example:**
@@ -312,7 +312,7 @@ For item-level updates, split the Rx or split the Obx.
 
 ## 8. Current status: what did 1.0.1 bring?
 
-**[ns_obx](https://pub.dev/packages/ns_obx)** current recommended version is **1.0.5**:
+**[ns_obx](https://pub.dev/packages/ns_obx)** current recommended version is **1.0.6**:
 
 | Module    | Contents                                                                    |
 |-----------|-----------------------------------------------------------------------------|
@@ -347,7 +347,7 @@ try.
 
 ```yaml
 dependencies:
-  ns_obx: ^1.0.5
+  ns_obx: ^1.0.6
 ```
 
 ---

@@ -1,6 +1,6 @@
 name: ns_obx
 description: "A lightweight, high-performance Flutter reactive state management library. A fine-grained reactive solution extracted from GetX's reactive core, supporting Obx, reactive variables, and collection types."
-version: 1.0.5
+version: 1.0.6
 topics:
   - state-management
   - reactive

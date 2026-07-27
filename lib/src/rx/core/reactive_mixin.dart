@@ -106,6 +106,7 @@ mixin ReactiveMixin<T> on RxSubjectMixin<T> {
   @protected
   T get rawValue => _value;
 
+  /// A [Stream] that emits every new [value] and can be listened to directly.
   Stream<T> get stream => subject.stream;
 
   /// 返回一个 [StreamSubscription]，与 [listen] 类似，但会先用当前 [value] 初始化流
@@ -127,7 +128,7 @@ mixin ReactiveMixin<T> on RxSubjectMixin<T> {
     return subscription;
   }
 
-  /// 将现有的 Stream<T> 绑定到此 Rx<T>，保持值同步
+  /// 将现有的 `Stream<T>` 绑定到此 `Rx<T>`，保持值同步
   ///
   /// 返回 [StreamSubscription]，可手动 [StreamSubscription.cancel]；
   /// Rx [close] 时也会自动取消。

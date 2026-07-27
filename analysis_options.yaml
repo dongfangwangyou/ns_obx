@@ -133,5 +133,6 @@ linter:
     - no_default_cases
     - prefer_asserts_with_message
     - prefer_final_in_for_each
+    - public_member_api_docs
     - unnecessary_await_in_return
     - use_named_constants

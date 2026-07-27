@@ -1,5 +1,4 @@
 # 开发/构建产物
-example/
 docs/
 build/
 .dart_tool/
@@ -8,6 +7,11 @@ pubspec_overrides.yaml
 *.iml
 .idea/
 .vscode/
+
+# example 目录需要随包发布，但排除其构建产物
+example/build/
+example/.dart_tool/
+example/pubspec.lock
 
 # 源码管理
 .git/

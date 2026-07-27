@@ -13,6 +13,7 @@ extension RxListExtension<E> on List<E> {
 
 /// 响应式列表类，类似 `List<T>` 但具有响应式能力
 class RxList<E> extends RxCollection<List<E>> with ListMixin<E> {
+  /// Creates a reactive list wrapping a copy of [initial].
   RxList([List<E> initial = const []]) {
     initializeValue(List.from(initial));
   }

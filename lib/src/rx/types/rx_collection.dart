@@ -17,6 +17,7 @@ abstract class RxCollection<T> with RxSubjectMixin<T>, ReactiveMixin<T> implemen
   @protected
   bool batchUpdating = false;
 
+  /// Notifies listeners unless a batch update is in progress.
   @protected
   void refreshUnlessBatching() {
     if (!batchUpdating) refresh();

@@ -43,7 +43,7 @@ issues, has zero third-party dependencies, and a bundle size of **<15KB**.
 
 ```yaml
 dependencies:
-  ns_obx: ^1.0.5
+  ns_obx: ^1.0.6
 ```
 
 ```bash

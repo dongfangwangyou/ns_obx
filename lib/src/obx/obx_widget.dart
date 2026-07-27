@@ -32,6 +32,10 @@ class Obx extends ObxWidget {
 /// - [Obx] - 通用响应式组件
 /// - [ObxValue] - 带本地状态的响应式组件
 abstract class ObxWidget extends StatefulWidget {
+  /// Creates a base [ObxWidget].
+  ///
+  /// Subclasses must implement [build], in which reading an Rx variable
+  /// automatically registers a dependency and triggers rebuilds on changes.
   const ObxWidget({super.key});
 
   @override
