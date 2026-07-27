@@ -1,79 +1,83 @@
 import 'dart:async';
 
-import 'package:flutter/widgets.dart';
-
-import '../rx/core/rx_interface.dart';
+import '../rx/rx.dart';
 import '../workers/workers.dart';
 
-/// Obx 页面生命周期混入：自动追踪并在 [dispose] 时释放 Rx / 订阅 / Worker。
+/// 通用 Rx 资源释放器，可在任意对象（Controller、Service、BLoC 等）中使用。
 ///
-/// 配合 [State] 与 `Obx` 使用，解决页面级资源手动释放易遗漏的问题。
+/// 功能与 `RxLifecycleMixin` 等价，但不依赖 Flutter StatefulWidget State，方便在非
+/// Widget 作用域中统一管理 Rx、StreamSubscription 与 Worker 的生命周期。
 ///
 /// 示例：
 /// ```dart
-/// class MyPage extends StatefulWidget {
-///   @override
-///   State<MyPage> createState() => _MyPageState();
-/// }
+/// class UserController {
+///   final _disposable = RxDisposable();
+///   late final users = _disposable.rx(<User>[].obs);
+///   late final query = _disposable.rx(''.obs);
 ///
-/// class _MyPageState extends State<MyPage> with ObxLifecycleMixin {
-///   late final count = rx(0.obs);
-///   late final name = rx(''.obs);
-///
-///   @override
-///   Widget build(BuildContext context) {
-///     return Obx(() => Text('${count.value}'));
+///   UserController() {
+///     _disposable.worker(debounce(query, _search));
 ///   }
+///
+///   void dispose() => _disposable.dispose();
 /// }
 /// ```
-mixin ObxLifecycleMixin<W extends StatefulWidget> on State<W> {
+class RxDisposable {
   final _rxList = <RxInterface<dynamic>>[];
   final _subscriptions = <StreamSubscription<dynamic>>[];
   List<Worker>? _workers;
+  bool _disposed = false;
 
-  /// 注册 Rx 变量，[dispose] 时自动释放
+  /// 是否已释放
+  bool get isDisposed => _disposed;
+
+  void _throwIfDisposed() {
+    if (_disposed) {
+      throw StateError('RxDisposable has already been disposed');
+    }
+  }
+
+  /// 注册 Rx 变量，[dispose] 时自动调用其 close 方法
   ///
-  /// 返回传入的 Rx 变量本身，支持 `late final` 声明：
-  /// ```dart
-  /// late final count = rx(0.obs);
-  /// ```
-  @protected
+  /// 返回传入的 Rx 变量本身，支持链式声明。
   R rx<R extends RxInterface<dynamic>>(R reactive) {
+    _throwIfDisposed();
     _rxList.add(reactive);
     return reactive;
   }
 
   /// 注册 [StreamSubscription]，[dispose] 时自动取消
-  @protected
   StreamSubscription<R> subscription<R>(StreamSubscription<R> sub) {
+    _throwIfDisposed();
     _subscriptions.add(sub);
     return sub;
   }
 
   /// 监听 Rx 变量变化，自动追踪返回的订阅
-  @protected
   StreamSubscription<R> listen<R>(
     RxInterface<R> rx,
     void Function(R) onData,
   ) {
+    _throwIfDisposed();
     final sub = rx.listen(onData);
     _subscriptions.add(sub);
     return sub;
   }
 
   /// 注册 [Worker]，[dispose] 时自动 [Worker.dispose]
-  @protected
   Worker worker(Worker w) {
+    _throwIfDisposed();
     (_workers ??= []).add(w);
     return w;
   }
 
   /// 释放所有已注册的 Rx、订阅与 Worker
   ///
-  /// 由 [dispose] 自动调用，通常无需手动调用。
-  @protected
-  @mustCallSuper
-  void disposeRx() {
+  /// 多次调用安全，后续再注册会抛出 [StateError]。
+  void dispose() {
+    if (_disposed) return;
+    _disposed = true;
+
     final workers = _workers;
     if (workers != null) {
       for (final w in workers) {
@@ -91,11 +95,5 @@ mixin ObxLifecycleMixin<W extends StatefulWidget> on State<W> {
       rx.close();
     }
     _rxList.clear();
-  }
-
-  @override
-  void dispose() {
-    disposeRx();
-    super.dispose();
   }
 }

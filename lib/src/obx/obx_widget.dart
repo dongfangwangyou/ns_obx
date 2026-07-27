@@ -14,8 +14,12 @@ import 'obx_observer.dart';
 /// Obx(() => Text(_name.value)), ...;
 /// ```
 class Obx extends ObxWidget {
+  /// 构建当前响应式 UI 的回调。
+  ///
+  /// 在该回调的作用域内读取 Rx 变量会自动注册依赖，变量变化时触发重建。
   final Widget Function() builder;
 
+  /// 创建一个 [Obx]，[builder] 负责构建响应式 UI。
   const Obx(this.builder, {super.key});
 
   @override
@@ -39,12 +43,20 @@ abstract class ObxWidget extends StatefulWidget {
   @override
   ObxState createState() => ObxState();
 
+  /// 子类需实现此方法以构建响应式 UI。
+  ///
+  /// 在该方法作用域内读取 Rx 变量会自动注册依赖，变量变化时触发重建。
   @protected
   Widget build();
 }
 
 /// ObxWidget 的状态管理类
 class ObxState extends State<ObxWidget> {
+  /// 创建一个 [ObxState]。
+  ///
+  /// 通常由 [ObxWidget.createState] 自动调用，无需手动实例化。
+  ObxState();
+
   late final ObxObserver _observer;
   bool _updateScheduled = false;
 
@@ -88,19 +100,23 @@ class ObxState extends State<ObxWidget> {
 }
 
 /// 类似 Obx，但管理一个本地状态
-/// 在构造函数中传递初始数据，适用于简单的局部状态，如开关、可见性、主题、按钮状态等
-///
-/// 示例:
-/// ```dart
-/// ObxValue((data) => Switch(
-///   value: data.value,
-///   onChanged: (flag) => data.value = flag,
-/// ), false.obs)
+// /// 在构造函数中传递初始数据，适用于简单的局部状态，如开关、可见性、主题、按钮状态等
+// ///
+// /// 示例:
+// /// ```dart
+// /// ObxValue((data) => Switch(
+// ///   value: data.value,
+// ///   onChanged: (flag) => data.value = flag,
+// /// ), false.obs)
 /// ```
 class ObxValue<T extends Rx<dynamic>> extends ObxWidget {
+  /// 构建当前响应式 UI 的回调，参数为本地管理的 Rx 状态 [data]。
   final Widget Function(T) builder;
+
+  /// 由 [ObxValue] 持有并管理的本地 Rx 状态。
   final T data;
 
+  /// 创建一个 [ObxValue]，[data] 为本地 Rx 状态，[builder] 负责构建 UI。
   const ObxValue(this.builder, this.data, {super.key});
 
   @override

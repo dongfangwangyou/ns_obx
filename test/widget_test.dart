@@ -395,9 +395,9 @@ void main() {
   });
 
   // ============================================================
-  // ObxLifecycleMixin 资源释放
+  // RxLifecycleMixin 资源释放
   // ============================================================
-  group('ObxLifecycleMixin', () {
+  group('RxLifecycleMixin', () {
     testWidgets('Rx stops notifying after dispose', (tester) async {
       int notifyCount = 0;
 
@@ -468,7 +468,7 @@ void main() {
 }
 
 // ============================================================
-// 测试辅助: ObxLifecycleMixin — 通知计数验证 dispose
+// 测试辅助: RxLifecycleMixin — 通知计数验证 dispose
 // ============================================================
 
 class _DisposeNotifyTestWidget extends StatefulWidget {
@@ -481,7 +481,7 @@ class _DisposeNotifyTestWidget extends StatefulWidget {
 }
 
 class _DisposeNotifyTestState extends State<StatefulWidget>
-    with ObxLifecycleMixin {
+    with RxLifecycleMixin {
   @override
   void initState() {
     super.initState();
@@ -514,7 +514,7 @@ class _AutoDisposeReturnWidget extends StatefulWidget {
 }
 
 class _AutoDisposeReturnState extends State<StatefulWidget>
-    with ObxLifecycleMixin {
+    with RxLifecycleMixin {
   @override
   void initState() {
     super.initState();

@@ -1,16 +1,15 @@
 name: ns_obx
-description: >
-  轻量级、高性能 Flutter 响应式状态管理库。
-  从 GetX 剥离的精细粒度响应式方案，支持 Obx、响应式变量、集合类型。
-  极小包体积（<15KB）、零依赖、类型安全。
-version: 1.0.3
+description: "A lightweight, high-performance Flutter reactive state management library. A fine-grained reactive solution extracted from GetX's reactive core, supporting Obx, reactive variables, and collection types."
+version: 1.0.5
+topics:
+  - state-management
+  - reactive
+  - getx
+  - obx
+  - rx
 homepage: https://github.com/dongfangwangyou/ns_obx
 repository: https://github.com/dongfangwangyou/ns_obx
 issue_tracker: https://github.com/dongfangwangyou/ns_obx/issues
-publish_to: https://pub.dev
-# 下载依赖可用镜像（仅影响 pub get，不影响 publish）：
-#   $env:PUB_HOSTED_URL = "https://pub.flutter-io.cn"
-#   $env:FLUTTER_STORAGE_BASE_URL = "https://storage.flutter-io.cn"
 
 environment:
   sdk: '>=3.4.0 <4.0.0'

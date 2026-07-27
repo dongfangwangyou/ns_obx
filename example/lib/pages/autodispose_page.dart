@@ -4,7 +4,7 @@ import 'package:ns_obx/ns_obx.dart';
 
 /// Entry widget — wraps the AutoDispose demo in a [Visibility] toggle
 /// so we can mount and unmount the widget to prove that
-/// [RxAutoDisposeMixin] cleans up resources on dispose.
+/// [RxLifecycleMixin] cleans up resources on dispose.
 class AutoDisposePage extends StatefulWidget {
   const AutoDisposePage({super.key});
 
@@ -36,7 +36,7 @@ class _AutoDisposePageState extends State<AutoDisposePage> {
                 Expanded(
                   child: Text(
                     'Toggle the widget below to mount/unmount. '
-                    'RxAutoDisposeMixin automatically cleans up '
+                    'RxLifecycleMixin automatically cleans up '
                     'all Rx variables and stream subscriptions on dispose.',
                     style: TextStyle(fontSize: 13),
                   ),
@@ -70,7 +70,7 @@ class _AutoDisposePageState extends State<AutoDisposePage> {
                 padding: EdgeInsets.all(24),
                 child: Center(
                   child: Text(
-                    'Widget unmounted.\nRxAutoDisposeMixin.dispose() has been called.\nAll resources released.',
+                    'Widget unmounted.\nRxLifecycleMixin.dispose() has been called.\nAll resources released.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey),
                   ),
@@ -83,7 +83,7 @@ class _AutoDisposePageState extends State<AutoDisposePage> {
   }
 }
 
-/// The actual demo widget using [RxAutoDisposeMixin].
+/// The actual demo widget using [RxLifecycleMixin].
 class _AutoDisposeDemoWidget extends StatefulWidget {
   const _AutoDisposeDemoWidget();
 
@@ -92,7 +92,7 @@ class _AutoDisposeDemoWidget extends StatefulWidget {
 }
 
 class _AutoDisposeDemoWidgetState extends State
-    with RxAutoDisposeMixin {
+    with RxLifecycleMixin {
   // All three are registered via rx() → auto-disposed
   late final _counter = rx(0.obs);
   late final _message = rx('Hello'.obs);
@@ -126,7 +126,7 @@ class _AutoDisposeDemoWidgetState extends State
   @override
   void dispose() {
     _timer?.cancel();
-    // RxAutoDisposeMixin.dispose() auto-called via mixin —
+    // RxLifecycleMixin.dispose() auto-called via mixin —
     // closes _counter, _message, _items; cancels listen / bindStream subs
     super.dispose();
   }
@@ -148,7 +148,7 @@ class _AutoDisposeDemoWidgetState extends State
               children: [
                 Icon(Icons.auto_awesome, color: Colors.teal.shade700, size: 20),
                 const SizedBox(width: 8),
-                Text('RxAutoDisposeMixin Active',
+                Text('RxLifecycleMixin Active',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.teal.shade700,

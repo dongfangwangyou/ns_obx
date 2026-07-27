@@ -6,12 +6,12 @@ void main() {
   // Signal 基础操作
   // ============================================================
   group('Signal basic operations', () {
-    test('add triggers listener with value', () {
+    test('emit triggers listener with value', () {
       final signal = Signal<int>();
       int? received;
       signal.listen((v) => received = v);
 
-      signal.add(42);
+      signal.emit(42);
       expect(received, 42);
     });
 
@@ -40,31 +40,31 @@ void main() {
       expect(signal.length, 0);
     });
 
-    test('value retains last added value', () {
+    test('value retains last emitted value', () {
       final signal = Signal<int>();
       expect(signal.value, isNull);
 
-      signal.add(10);
+      signal.emit(10);
       expect(signal.value, 10);
 
-      signal.add(20);
+      signal.emit(20);
       expect(signal.value, 20);
     });
 
-    test('add without listeners updates value and skips notify', () {
+    test('emit without listeners updates value and skips notify', () {
       final signal = Signal<int>();
       expect(signal.hasListeners, false);
 
-      signal.add(42);
+      signal.emit(42);
       expect(signal.value, 42);
       expect(signal.hasListeners, false);
     });
 
-    test('addError without listeners does not throw', () {
+    test('emitError without listeners does not throw', () {
       final signal = Signal<int>();
       expect(signal.hasListeners, false);
 
-      expect(() => signal.addError('err'), returnsNormally);
+      expect(() => signal.emitError('err'), returnsNormally);
     });
 
     test('close marks signal as closed', () {
@@ -87,7 +87,7 @@ void main() {
 
     test('close retains last value', () {
       final signal = Signal<int>();
-      signal.add(99);
+      signal.emit(99);
       signal.close();
 
       expect(signal.value, 99);
@@ -110,8 +110,8 @@ void main() {
       });
 
       // Should not throw
-      signal.add(1);
-      signal.add(2);
+      signal.emit(1);
+      signal.emit(2);
 
       expect(lateSubToCancel, isNotNull);
       // Clean up
@@ -132,8 +132,8 @@ void main() {
       signal.listen((_) {});
 
       // Should not throw
-      signal.add(1);
-      signal.add(2);
+      signal.emit(1);
+      signal.emit(2);
     });
 
     test('pending additions processed after notification', () {
@@ -150,9 +150,9 @@ void main() {
 
       // The second listener added during notification 1 should
       // be processed after the current notification batch
-      signal.add(1);
-      // Second add should reach both listeners
-      signal.add(2);
+      signal.emit(1);
+      // Second emit should reach both listeners
+      signal.emit(2);
 
       // First listener: 1, 2
       // Second listener: starts at 2 -> 102
@@ -176,9 +176,9 @@ void main() {
       });
 
       // During notification of value 1, sub2 is cancelled
-      signal.add(1);
+      signal.emit(1);
       // sub2 should be removed for the next notification
-      signal.add(2);
+      signal.emit(2);
 
       // Value 1: both listeners fire -> 1, 51
       // Value 2: only sub1 fires -> 2
@@ -207,11 +207,11 @@ void main() {
       sub2 = signal.listen((v) => received.add(v + 100));
 
       // Notify 1: sub2 cancelled, sub3 added as pending
-      signal.add(1);
+      signal.emit(1);
       // Notify 2: listeners = [sub1, sub3], sub4 added as pending
-      signal.add(2);
+      signal.emit(2);
       // Notify 3: listeners = [sub1, sub3, sub4]
-      signal.add(3);
+      signal.emit(3);
 
       // sub1: 1, 2, 3
       // sub2: 101 (then cancelled before value 2)
@@ -239,7 +239,7 @@ void main() {
       sub2 = signal.listen((_) {});
 
       expect(signal.length, 2);
-      signal.add(1);
+      signal.emit(1);
       // sub2 cancelled
       expect(signal.length, 1);
     });
@@ -256,10 +256,10 @@ void main() {
 
       signal.listen((v) => received.add(v));
 
-      expect(() => signal.add(1), throwsStateError);
+      expect(() => signal.emit(1), throwsStateError);
       expect(received, isEmpty);
 
-      signal.add(2);
+      signal.emit(2);
       expect(received, [2]);
     });
   });
@@ -279,13 +279,9 @@ void main() {
 
     test('onCancel fires when subscription cancelled', () {
       var cancelCalled = false;
-      final signal = Signal<int>();
+      final signal = Signal<int>(onCancel: () => cancelCalled = true);
 
-      final sub = SignalSubscription<int>(
-        (s) => true,
-        onCancel: () => cancelCalled = true,
-      );
-      signal.addSubscription(sub);
+      final sub = signal.listen((_) {});
       sub.cancel();
 
       expect(cancelCalled, true);
@@ -295,14 +291,11 @@ void main() {
       var pauseCalled = false;
       var resumeCalled = false;
 
-      final signal = Signal<int>();
-      final sub = SignalSubscription<int>(
-        (s) => true,
+      final signal = Signal<int>(
         onPause: () => pauseCalled = true,
         onResume: () => resumeCalled = true,
       );
-
-      signal.addSubscription(sub);
+      final sub = signal.listen((_) {});
 
       expect(sub.isPaused, false);
       sub.pause();
@@ -323,11 +316,11 @@ void main() {
       final sub = signal.listen((v) => received = v);
       sub.pause();
 
-      signal.add(42);
+      signal.emit(42);
       expect(received, isNull);
 
       sub.resume();
-      signal.add(99);
+      signal.emit(99);
       expect(received, 99);
 
       sub.cancel();
@@ -338,7 +331,7 @@ void main() {
   // Signal Error handling
   // ============================================================
   group('Signal error handling', () {
-    test('addError triggers onError', () {
+    test('emitError triggers onError', () {
       final signal = Signal<int>();
       Object? errorReceived;
       StackTrace? stackReceived;
@@ -354,7 +347,7 @@ void main() {
       );
 
       final stack = StackTrace.current;
-      signal.addError('boom', stack);
+      signal.emitError('boom', stack);
       expect(errorReceived, 'boom');
       expect(stackReceived, stack);
     });
@@ -370,10 +363,10 @@ void main() {
 
       signal.listen((v) => received.add(v + 100));
 
-      signal.add(1);
-      signal.addError('error');
+      signal.emit(1);
+      signal.emitError('error');
       // After error, first subscriber cancelled
-      signal.add(2);
+      signal.emit(2);
 
       expect(received, [1, 101, 102]);
     });
@@ -389,9 +382,9 @@ void main() {
 
       signal.stream.listen((v) => received.add(v));
 
-      signal.add(1);
-      signal.add(2);
-      signal.add(3);
+      signal.emit(1);
+      signal.emit(2);
+      signal.emit(3);
 
       expect(received, [1, 2, 3]);
     });

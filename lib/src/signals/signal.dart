@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 /// [Signal] 是 Dart 中最轻量级、最高性能的事件处理方式
 /// 语法类似 [StreamController]，但使用简单的回调方式工作
@@ -46,24 +45,24 @@ class Signal<T> {
   /// 当前值
   T? get value => _value;
 
-  /// 添加事件
+  /// 发射事件
   /// 当信号已关闭时，会抛出异常
-  void add(T event) {
-    assert(!isClosed, '不能向已关闭的信号添加事件');
+  void emit(T event) {
+    assert(!isClosed, '不能向已关闭的信号发射事件');
     _value = event; // 更新当前值
     _notifyData(event); // 通知订阅者
   }
 
-  /// 添加错误
+  /// 发射错误
   /// 当信号已关闭时，会抛出异常
-  void addError(Object error, [StackTrace? stackTrace]) {
-    assert(!isClosed, '不能向已关闭的信号添加错误');
+  void emitError(Object error, [StackTrace? stackTrace]) {
+    assert(!isClosed, '不能向已关闭的信号发射错误');
     _notifyError(error, stackTrace); // 通知订阅者
   }
 
-  /// 添加订阅者
+  /// 关联订阅者（内部方法）
   /// 在通知期间暂存到待处理列表，通知结束后批量添加
-  void addSubscription(SignalSubscription<T> subs) {
+  void _attach(SignalSubscription<T> subs) {
     if (_onData == null) return;
     if (_isBusy) {
       _pendingAdditions.add(subs);
@@ -72,9 +71,9 @@ class Signal<T> {
     }
   }
 
-  /// 移除订阅者
+  /// 解除订阅者（内部方法）
   /// 在通知期间暂存到待处理列表，通知结束后批量移除
-  bool removeSubscription(SignalSubscription<T> subs) {
+  bool _detach(SignalSubscription<T> subs) {
     if (_onData == null) return false;
     if (_isBusy) {
       _pendingRemovals.add(subs);
@@ -134,7 +133,7 @@ class Signal<T> {
     try {
       final itemsToRemove = <SignalSubscription<T>>[];
       _forEachActive(_onData!, (item) {
-        _dispatchError(item, error, stackTrace);
+        item._onError?.call(error, stackTrace ?? StackTrace.empty);
         if (item.cancelOnError ?? false) {
           itemsToRemove.add(item);
           item.pause();
@@ -147,18 +146,6 @@ class Signal<T> {
     } finally {
       _isBusy = false;
       _processPending();
-    }
-  }
-
-  void _dispatchError(
-    SignalSubscription<T> item,
-    Object error,
-    StackTrace? stackTrace,
-  ) {
-    if (stackTrace != null) {
-      item._onError?.call(error, stackTrace);
-    } else {
-      item._onError?.call(error);
     }
   }
 
@@ -175,10 +162,10 @@ class Signal<T> {
   }
 
   /// 关闭信号
-  /// 当信号已关闭时，会抛出异常
+  /// 重复调用为安全 no-op。
   /// 关闭后 [value] 仍保留最后的值，便于 onDone 回调中读取
   void close() {
-    assert(!isClosed, '不能关闭已关闭的信号');
+    if (isClosed) return;
     _notifyDone();
     _onData = null;
     _isBusy = false;
@@ -196,7 +183,7 @@ class Signal<T> {
     bool? cancelOnError,
   }) {
     final subs = SignalSubscription<T>(
-      removeSubscription,
+      _detach,
       onPause: onPause,
       onResume: onResume,
       onCancel: onCancel,
@@ -205,7 +192,7 @@ class Signal<T> {
       ..onError(onError)
       ..onDone(onDone)
       ..cancelOnError = cancelOnError;
-    addSubscription(subs);
+    _attach(subs);
     onListen?.call();
     return subs;
   }
@@ -213,19 +200,19 @@ class Signal<T> {
 
 /// [SignalSubscription] 信号订阅服务
 class SignalSubscription<T> implements StreamSubscription<T> {
-  final bool Function(SignalSubscription<T> subs) _removeSubscription;
+  final bool Function(SignalSubscription<T> subs) _detach;
   final void Function()? onPause;
   final void Function()? onResume;
   final FutureOr<void> Function()? onCancel;
 
-  SignalSubscription(this._removeSubscription,
+  SignalSubscription(this._detach,
       {this.onPause, this.onResume, this.onCancel});
 
   bool _isPaused = false;
   bool? cancelOnError = false;
   void Function(T data)? _data;
-  Function? _onError;
-  VoidCallback? _onDone;
+  void Function(Object error, StackTrace stackTrace)? _onError;
+  void Function()? _onDone;
 
   @override
   bool get isPaused => _isPaused;
@@ -235,12 +222,31 @@ class SignalSubscription<T> implements StreamSubscription<T> {
   void onData(void Function(T data)? handleData) => _data = handleData;
 
   /// 错误处理
+  ///
+  /// 支持 `void Function(Object)` 与 `void Function(Object, StackTrace)` 两种签名。
   @override
-  void onError(Function? handleError) => _onError = handleError;
+  void onError(Function? handleError) {
+    if (handleError == null) {
+      _onError = null;
+      return;
+    }
+    // 兼容 void Function(Object) 与 void Function(Object, StackTrace)
+    if (handleError is void Function(Object, StackTrace)) {
+      _onError = handleError;
+    } else if (handleError is void Function(Object)) {
+      _onError = (Object error, StackTrace stackTrace) => handleError(error);
+    } else {
+      throw ArgumentError.value(
+        handleError,
+        'handleError',
+        'onError callback must be either void Function(Object) or void Function(Object, StackTrace)',
+      );
+    }
+  }
 
   /// 流关闭通知
   @override
-  void onDone(VoidCallback? handleDone) => _onDone = handleDone;
+  void onDone(void Function()? handleDone) => _onDone = handleDone;
 
   /// 暂停
   @override
@@ -260,7 +266,7 @@ class SignalSubscription<T> implements StreamSubscription<T> {
   /// 特别要注意资源释放：不用时必须cancel()防止内存泄漏
   @override
   Future<void> cancel() {
-    _removeSubscription(this);
+    _detach(this);
     onCancel?.call();
     return Future.value();
   }
@@ -278,11 +284,11 @@ class _SignalStreamAdapter<T> extends Stream<T> {
   @override
   SignalSubscription<T> listen(void Function(T event)? onData,
       {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    if (onData == null) {
-      return _signal.listen((_) {},
-          onError: onError, onDone: onDone, cancelOnError: cancelOnError);
-    }
-    return _signal.listen(onData,
-        onError: onError, onDone: onDone, cancelOnError: cancelOnError);
+    return _signal.listen(
+      onData ?? (_) {},
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: cancelOnError,
+    );
   }
 }

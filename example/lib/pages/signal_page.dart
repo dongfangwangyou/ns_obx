@@ -44,7 +44,7 @@ class _SignalPageState extends State<SignalPage> {
 
   void _addEvent() {
     _eventCounter++;
-    _signal.add('Event #$_eventCounter');
+    _signal.emit('Event #$_eventCounter');
   }
 
   void _pauseResume() {
@@ -213,7 +213,7 @@ class _SignalPageState extends State<SignalPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _apiRow('signal.listen(onData)', 'Subscribe to events'),
-                _apiRow('signal.add(event)', 'Emit an event to subscribers'),
+                _apiRow('signal.emit(event)', 'Emit an event to subscribers'),
                 _apiRow('subscription.pause()', 'Pause receiving events'),
                 _apiRow('subscription.resume()', 'Resume receiving events'),
                 _apiRow('subscription.cancel()', 'Cancel subscription'),

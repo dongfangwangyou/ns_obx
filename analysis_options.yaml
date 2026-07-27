@@ -127,3 +127,11 @@ linter:
     - use_key_in_widget_constructors
     - use_rethrow_when_possible
     - use_super_parameters
+
+    # === 严格性增强 ===
+    - avoid_dynamic_calls
+    - no_default_cases
+    - prefer_asserts_with_message
+    - prefer_final_in_for_each
+    - unnecessary_await_in_return
+    - use_named_constants

@@ -38,7 +38,8 @@ mixin ReactiveMixin<T> on RxSubjectMixin<T> {
   /// 直接更新 [value] 并发送到 Stream
   /// 当使用自定义类型的 Rx 时，可调用此方法刷新 UI
   void refresh() {
-    subject.add(_value);
+    if (subject.isClosed) return;
+    subject.emit(_value);
   }
 
   /// 使 Rx 对象可以像函数一样调用
@@ -85,7 +86,7 @@ mixin ReactiveMixin<T> on RxSubjectMixin<T> {
     isFirstRebuild = false;
     _value = val;
     hasNotified = true;
-    subject.add(_value);
+    subject.emit(_value);
   }
 
   /// 返回当前 [value]，访问时自动注册依赖
@@ -119,16 +120,21 @@ mixin ReactiveMixin<T> on RxSubjectMixin<T> {
       cancelOnError: cancelOnError ?? false,
     );
 
-    subject.add(_value);
+    if (!subject.isClosed) {
+      subject.emit(_value);
+    }
 
     return subscription;
   }
 
-  /// 将现有的 `Stream<T>` 绑定到此 Rx<T>，保持值同步
+  /// 将现有的 Stream<T> 绑定到此 Rx<T>，保持值同步
   ///
   /// 返回 [StreamSubscription]，可手动 [StreamSubscription.cancel]；
   /// Rx [close] 时也会自动取消。
   StreamSubscription<T> bindStream(Stream<T> stream) {
+    if (subject.isClosed) {
+      throw StateError('Cannot bind stream to a closed Rx');
+    }
     final subscription = stream.listen((va) => value = va);
     linkSubscription(subscription);
     return subscription;

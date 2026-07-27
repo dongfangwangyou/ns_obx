@@ -1,8 +1,8 @@
 # ns_obx Example
 
-Demonstrates all core features of **ns_obx** 1.0.1.
+A minimal, runnable Flutter app that demonstrates the core features of `ns_obx`.
 
-## Running
+## Run
 
 ```bash
 cd example
@@ -10,44 +10,27 @@ flutter pub get
 flutter run
 ```
 
-## Testing
-
-```bash
-cd example
-flutter test
-```
-
-## Pages
-
-| Page | Features |
-|------|----------|
-| **Basic** | `.obs`, `Obx`, `peek`, `RxInt` operators, `RxString`, `RxBool`, `ObxValue` |
-| **Collections** | `RxList` / `RxMap` / `RxSet` CRUD, `update` / `batchUpdate`, `addIf` + `RxCondition` |
-| **Nullable** | `RxnInt`, nullable helpers, `peek`, `getOrElse`, `getOrThrow` |
-| **Signal** | `Signal<T>` 独立事件通知（无需 Obx），listen / pause / resume / close |
-| **AutoDispose** | `RxAutoDisposeMixin`, mount/unmount, `bindStream` |
-| **Workers** | `ever`, `once`, `debounce`（trailing / `leading: true`）, `interval`, `worker()` |
-| **Boundaries** | Obx read-only, conditional branches, stale 依赖, `select`, `update()` |
-
 ## Structure
 
-```
-example/
-  lib/
-    main.dart
-    pages/
-      basic_page.dart
-      collection_page.dart
-      nullable_page.dart
-      signal_page.dart
-      autodispose_page.dart
-      workers_page.dart
-      boundaries_page.dart
-  test/
-    widget_test.dart
-```
+This example follows
+the [Dart package layout conventions](https://dart.dev/tools/pub/package-layout#examples):
 
-## See also
+- `lib/main.dart` — Entry point of the example app.
+- `lib/pages/` — Standalone demo pages, each focusing on one feature.
+- `pubspec.yaml` — Depends on `ns_obx` via path import.
+- `test/widget_test.dart` — Basic widget tests for the example app.
 
-- [Package README](../README.md) — API 速查与最佳实践
-- [CHANGELOG](../CHANGELOG.md) — 版本变更
+## Demo Pages
+
+| Page         | Feature                                           |
+|--------------|---------------------------------------------------|
+| Basic Rx     | `.obs`, `Obx`, `ObxValue`, `peek`                 |
+| Collections  | `RxList`, `RxMap`, `RxSet`, batch update          |
+| Nullable     | `RxnInt`, `RxStringNullable`, null-safety helpers |
+| Signal       | Event primitive, pause/resume/close               |
+| EventChannel | Type-safe event bus built on `Signal`             |
+| AutoDispose  | `RxLifecycleMixin` automatic resource cleanup     |
+| Workers      | `ever`, `once`, `debounce`, `interval`            |
+| Boundaries   | Best practices and common pitfalls                |
+
+All pages use `package:ns_obx/ns_obx.dart` imports, matching how external apps consume the package.

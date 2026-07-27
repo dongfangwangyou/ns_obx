@@ -1,3 +1,17 @@
+# Dart / Flutter build artifacts
 .dart_tool/
+build/
+**/build/
+
+# Lock files (libraries should not commit lock files)
 pubspec.lock
-/build/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+

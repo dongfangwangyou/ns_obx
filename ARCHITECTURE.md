@@ -1,249 +1,272 @@
-# ns_obx 架构说明
+[简体中文](ARCHITECTURE_CN.md)
 
-本文档描述 ns_obx 内部依赖追踪与响应式数据流设计，面向维护者与需要深入理解 Obx / Rx 行为的进阶用户。API 用法见 [README.md](README.md)。
+# ns_obx Architecture
 
----
-
-## 1. 设计目标
-
-| 目标 | 做法 |
-|------|------|
-| GetX 兼容 | `.obs`、`Obx`、`RxList/Map/Set` 对外 API 保持一致 |
-| 精确 rebuild | 字段级依赖；条件分支切换后 stale Rx 自动 detach |
-| 订阅不混淆 | **proxy 依赖**（Obx 读 `.value`）与 **上游订阅**（`bindStream`、`select`）分表管理 |
-| 低开销 | Signal 无订阅跳过通知；Obx 同帧合并 `setState`；增量 sweep 替代全量 `clearListeners` |
+This document describes the internal dependency-tracking and reactive data-flow design of `ns_obx`.
+It is intended for maintainers and advanced users who need a deep understanding of Obx / Rx
+behavior. For API usage, see [README.md](README.md).
 
 ---
 
-## 2. 分层总览
+## 1. Design Goals
+
+| Goal                        | Approach                                                                                                                                          |
+|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| GetX-compatible             | `.obs`, `Obx`, `RxList/Map/Set` public APIs stay consistent                                                                                       |
+| Precise rebuild             | Field-level dependencies; stale Rx values automatically detach after conditional branch switches                                                  |
+| Subscriptions kept separate | **Proxy dependencies** (Obx reads `.value`) and **upstream subscriptions** (`bindStream`, `select`) are managed in separate tables                |
+| Low overhead                | Signal skips notification when it has no listeners; Obx merges `setState` within the same frame; incremental sweep replaces full `clearListeners` |
+
+---
+
+## 2. Layer Overview
 
 ```
-                    RxInterface（RxProxyContract + static proxy）
+                    RxInterface (RxProxyContract + static proxy)
                               │
          ┌────────────────────┴────────────────────┐
          ▼                                         ▼
-   Rx 发布侧                                   Obx 观察侧
-   RxSubjectMixin                              ObxObserver
-         │                                    （proxy 依赖表 + sweep）
+   Rx Publisher Side                       Obx Observer Side
+   RxSubjectMixin                                ObxObserver
+         │                              (proxy dependency table + sweep)
          │                                         │
          └──────── subject / listen ◄──────── attach / rebuild
                               │
-                    Signal（事件原语）
+                    Signal (event primitive)
 ```
 
-### 模块职责
+### Module Responsibilities
 
-| 模块 | 文件 | 职责 |
-|------|------|------|
-| **Signal** | `signals/signal.dart` | 同步事件广播；`value` 存储；无 buffer |
-| **RxProxyContract** | `rx/core/rx_interface.dart` | 实例契约：依赖登记 + listen / close |
-| **RxSubjectMixin** | `rx/core/rx_subject_mixin.dart` | 发布侧 `subject`、`listen()`（无 proxy 依赖表） |
-| **ReactiveMixin** | `rx/core/reactive_mixin.dart` | `value`、`bindStream`、`linkSubscription` |
-| **RxCollection** | `rx/types/rx_collection.dart` | 集合基类 + `RxCondition`；`readTracked` / `evaluateCondition` |
-| **ObxObserver** | `obx/obx_observer.dart` | proxy 依赖表 + sweep + rebuild |
-| **ObxState** | `obx/obx_widget.dart` | 持有 `ObxObserver`；sweep 包裹 builder；同帧 `scheduleFrameCallback` |
+| Module              | File                            | Responsibility                                                               |
+|---------------------|---------------------------------|------------------------------------------------------------------------------|
+| **Signal**          | `signals/signal.dart`           | Synchronous event broadcast; stores `value`; no buffer                       |
+| **RxProxyContract** | `rx/core/rx_interface.dart`     | Instance contract: dependency registration + listen / close                  |
+| **RxSubjectMixin**  | `rx/core/rx_subject_mixin.dart` | Publisher-side `subject`, `listen()` (no proxy dependency table)             |
+| **ReactiveMixin**   | `rx/core/reactive_mixin.dart`   | `value`, `bindStream`, `linkSubscription`                                    |
+| **RxCollection**    | `rx/types/rx_collection.dart`   | Collection base class + `RxCondition`; `readTracked` / `evaluateCondition`   |
+| **ObxObserver**     | `obx/obx_observer.dart`         | Proxy dependency table + sweep + rebuild                                     |
+| **ObxState**        | `obx/obx_widget.dart`           | Holds `ObxObserver`; sweep wraps builder; same-frame `scheduleFrameCallback` |
 
 ---
 
-## 3. 两类订阅（核心区分）
+## 3. Two Kinds of Subscriptions (Core Distinction)
 
-### 3.1 Proxy 依赖（仅 ObxObserver）
+### 3.1 Proxy Dependencies (ObxObserver Only)
 
-当 `Obx` rebuild 执行 `count.value` 时：
+When an `Obx` rebuild executes `count.value`:
 
-1. `notifyDependents` 将 `RxInterface.proxy` 指向当前 `ObxObserver`（栈式压入/恢复，无 public setter）
-2. Rx 的 getter 调用 `proxy.addListener(subject)`
-3. `ObxObserver.addListener(signal)` → `_dispatch()`
+1. `notifyDependents` points `RxInterface.proxy` to the current `ObxObserver` (stacked push/restore,
+   no public setter).
+2. The Rx getter calls `proxy.addListener(subject)`.
+3. `ObxObserver.addListener(signal)` → `_dispatch()`.
 
-**Rx 数据节点无 proxy 依赖表**，`addListener` / `clearListeners` 在 Rx 侧为无操作。
+**Rx data nodes have no proxy dependency table**; `addListener` / `clearListeners` are no-ops on the
+Rx side.
 
-### 3.2 上游订阅（走 linkSubscription）
+### 3.2 Upstream Subscriptions (via linkSubscription)
 
-`bindStream`、`select` 对父 Rx 的 listen 等，通过 `ReactiveMixin.linkSubscription` 登记在 `_linkedSubscriptions`，**不进入** `_dependencies`。
+`bindStream`, `select`, and listens to a parent Rx are registered via
+`ReactiveMixin.linkSubscription` into `_linkedSubscriptions`, and **do not enter** `_dependencies`.
 
-原因：若混入同一张表，Obx 的 `endDependencySweep` 会误取消 `bindStream`，导致 Rx 不再同步外部 Stream。
+Reason: if they were mixed into the same table, Obx's `endDependencySweep` would mistakenly cancel
+`bindStream`, causing the Rx to stop synchronizing with the external Stream.
 
 ```
 bindStream(stream)  →  stream.listen(...)  →  linkSubscription(sub)
-select(parent)      →  parent.listen(...)   →  linkSubscription(sub)
+select(parent)      →  parent.listen(...)  →  linkSubscription(sub)
 ```
 
-`close()` 时统一取消 linked 订阅与 proxy 依赖。
+`close()` cancels both linked subscriptions and proxy dependencies together.
 
 ---
 
-## 4. Rx 与 Obx 的职责分界
+## 4. Responsibility Boundary Between Rx and Obx
 
-| | Rx（发布侧） | ObxObserver（观察侧） |
-|---|-------------|----------------------|
-| proxy 依赖表 | 无 | `_dependencies`（ObxObserver 内） |
-| `canUpdate` | 恒 `false` | `_dependencies.isNotEmpty` |
-| `addListener` | 无操作 | attach → rebuild |
-| 值变化出口 | `subject` | `_dispatch()` |
+|                        | Rx (Publisher) | ObxObserver (Observer)               |
+|------------------------|----------------|--------------------------------------|
+| Proxy dependency table | None           | `_dependencies` (inside ObxObserver) |
+| `canUpdate`            | Always `false` | `_dependencies.isNotEmpty`           |
+| `addListener`          | No-op          | attach → rebuild                     |
+| Value-change outlet    | `subject`      | `_dispatch()`                        |
 
 ---
 
-## 5. Obx rebuild 与增量 sweep
+## 5. Obx Rebuild and Incremental Sweep
 
-`sweep` 由 **ObxObserver** 实现；Rx 数据节点不调用。
+`sweep` is implemented by **ObxObserver**; Rx data nodes do not call it.
 
-每个 `Obx` rebuild 流程（`ObxState.build`）：
+Each `Obx` rebuild flow (`ObxState.build`):
 
 ```
-beginDependencySweep()     // 快照当前 _dependencies 的 key 集合
-  builder()                // 读 .value → retainDependency + 必要时 attach
-endDependencySweep()       // 对快照中仍剩余的 key 执行 detach
+beginDependencySweep()     // snapshot the current key set of _dependencies
+  builder()                // read .value → retainDependency + attach when needed
+endDependencySweep()       // detach keys that remain from the snapshot
 ```
 
-与旧版每帧 `clearListeners()` 全量取消相比：
+Compared with the old full `clearListeners()` every frame:
 
-- 未变化的依赖 **保留** 原 `StreamSubscription`，避免重复 attach
-- 条件分支切换后，不再读到的 Rx **自动** detach（stale 依赖修复）
+- Unchanged dependencies **keep** their original `StreamSubscription`, avoiding repeated attach.
+- After a conditional branch switch, Rx values that are no longer read are **automatically**
+  detached (stale-dependency fix).
 
-业务代码通常无需调用上述 API；测试或手动重置可用 `clearListeners()`。
-
----
-
-## 6. 同帧 rebuild 合并
-
-同一帧内多个 Rx 连续 `subject.add` 时，`ObxObserver._dispatch` 通过 `SchedulerBinding.scheduleFrameCallback` 将多次通知合并为 **一次** `setState`。
-
-典型场景：批量赋值 `loading` + `error`，或 `list.update` 后联动多个 Rx。
+Business code usually does not need to call the APIs above; tests or manual resets can use
+`clearListeners()`.
 
 ---
 
-## 7. 典型数据流
+## 6. Same-Frame Rebuild Merging
 
-### 7.1 用户改值 → Obx 更新
+When multiple Rx values call `subject.add` continuously within the same frame,
+`ObxObserver._dispatch` merges those notifications into **one** `setState` via
+`SchedulerBinding.scheduleFrameCallback`.
+
+Typical scenarios: batch assignments such as `loading` + `error`, or multiple linked Rx values after
+`list.update`.
+
+---
+
+## 7. Typical Data Flows
+
+### 7.1 User Changes Value → Obx Updates
 
 ```
 count.value++
-  → ReactiveMixin setter → subject.add(newValue)
-       ├─ ObxObserver（已 attach）→ scheduleFrameCallback → setState
-       └─ rx.listen(subject)     → Worker / 副作用（不经依赖表）
+  → ReactiveMixin setter → subject.emit(newValue)
+       ├─ ObxObserver (already attached) → scheduleFrameCallback → setState
+       └─ rx.listen(subject)            → Worker / side effect (not via dependency table)
 ```
 
-### 7.2 Obx build 注册依赖
+### 7.2 Obx Build Registers Dependencies
 
 ```
-Obx builder 执行 count.value
-  → getter 见 proxy != null → proxy.addListener(count.subject)
+Obx builder executes count.value
+  → getter sees proxy != null → proxy.addListener(count.subject)
   → ObxObserver.addListener(count.subject) → rebuild
 ```
 
-### 7.3 bindStream + Obx 同页
+### 7.3 bindStream + Obx on the Same Page
 
 ```
 externalStream → bindStream → value setter → subject.add
-                                    ↓
-                              Obx 若正在读该 Rx → rebuild
+                                                  ↓
+                                       Obx reads this Rx → rebuild
 
-Obx 条件分支不再读该 Rx → sweep 仅 detach Obx 侧 proxy
-bindStream 的 linkSubscription 不受影响 → Rx 仍同步 Stream
+Obx conditional branch no longer reads this Rx → sweep only detaches Obx-side proxy
+bindStream's linkSubscription is unaffected → Rx still syncs with Stream
 ```
 
 ---
 
-## 8. Rx 类型继承链
+## 8. Rx Type Inheritance Chain
 
-**标量**（`Rx`、`RxBool` 等）：
+**Scalars** (`Rx`, `RxBool`, etc.):
 
 ```dart
 abstract class _RxImpl<T> extends RxInterface<T>
     with RxSubjectMixin<T>, ReactiveMixin<T>
 ```
 
-**集合**（`RxList`、`RxMap`、`RxSet`）：
+**Collections** (`RxList`, `RxMap`, `RxSet`):
 
 ```dart
-abstract class RxCollection<T> with RxSubjectMixin<T>, ReactiveMixin<T>
-    implements RxInterface<T> { /* batch / readTracked / evaluateCondition */ }
+abstract class RxCollection<T>
+    with RxSubjectMixin<T>, ReactiveMixin<T>
+    implements RxInterface<T> {
+  /* batch / readTracked / evaluateCondition */
+}
 
-class RxList<E> extends RxCollection<List<E>> with ListMixin<E> { ... }
+class RxList<E> extends RxCollection<List<E>> with ListMixin<E> {}
 ```
 
-| 模块 | 职责 |
-|------|------|
-| **RxSubjectMixin** | `subject`、广播、`close(subject)` |
-| **ReactiveMixin** | `value`、`bindStream`、`linkSubscription`、取消 linked 后 `close` |
-| **RxCollection** | 集合批量 `batchUpdating`、`refreshUnlessBatching`、`readTracked`、`evaluateCondition` |
-| **ObxObserver** | proxy 依赖表 + sweep |
+| Module             | Responsibility                                                                                |
+|--------------------|-----------------------------------------------------------------------------------------------|
+| **RxSubjectMixin** | `subject`, broadcast, `close(subject)`                                                        |
+| **ReactiveMixin**  | `value`, `bindStream`, `linkSubscription`, and `close` after canceling linked subscriptions   |
+| **RxCollection**   | Collection batch `batchUpdating`, `refreshUnlessBatching`, `readTracked`, `evaluateCondition` |
+| **ObxObserver**    | Proxy dependency table + sweep                                                                |
 
-集合写操作走 `rawValue` / 内部路径，读操作用 `readTracked` 或 `ReactiveMixin.value`，避免重复注册 Obx 依赖。
-
----
-
-## 9. Signal 热路径（1.0.1+）
-
-- 无订阅者时 `add` / `addError` 跳过 listener 遍历（仍更新 `value`）
-- 单订阅 fast path（`_forEachActive`）
-- 通知路径 `try/finally`，listener 抛错后不卡在 busy 状态
-- `stream` getter 缓存 Stream 适配器
-
-Signal 可脱离 Obx 单独使用（事件总线、手动 `listen`）。
+Collection writes go through `rawValue` / internal paths; reads use `readTracked` or
+`ReactiveMixin.value` to avoid duplicate Obx dependency registration.
 
 ---
 
-## 10. Workers 与 Obx 的关系
+## 9. Signal Hot Path (1.0.1+)
 
-Workers（`ever`、`debounce` 等）通过 `rx.listen()` 订阅 **subject**，不经过 `RxInterface.proxy`，因此：
+- `add` / `addError` skip listener iteration when there are no subscribers (`value` is still
+  updated).
+- Single-subscriber fast path (`_forEachActive`).
+- Notification path uses `try/finally` so a throwing listener does not leave the signal stuck in a
+  busy state.
+- `stream` getter caches the Stream adapter.
 
-- 不触发 Obx 式依赖注册
-- 不受 Obx sweep 影响
-- 需在页面 dispose 时 `worker.dispose()` 或配合 `ObxLifecycleMixin`
-
----
-
-## 11. 生命周期
-
-| API | 行为 |
-|-----|------|
-| `Rx.close()` | `ReactiveMixin` 取消 linked 订阅 → `RxSubjectMixin` 关闭 `subject` |
-| `ObxObserver.close()` | `_closed = true`；清空依赖与 listen 回调 |
-| `ObxLifecycleMixin` | Widget dispose 时自动 `close` 注册的 Rx / 订阅 / Worker |
+Signal can be used independently of Obx (event bus, manual `listen`).
 
 ---
 
-## 12. 1.0.3 API 收窄
+## 10. Relationship Between Workers and Obx
 
-- 移除 **`RxInterface.proxy` public setter**；生产压栈走私有 **`_buildWithProxy`**，`notifyDependents` 在其上附加 `canUpdate` 断言
-- 对外保留 **`get proxy`**（只读）、**`notifyDependents`**（Obx）
-- 单测 **`testDependents`** / **`resetProxy`**（`@visibleForTesting`，委托 `_buildWithProxy`）
+Workers (`ever`, `debounce`, etc.) subscribe to the **subject** via `rx.listen()`, bypassing
+`RxInterface.proxy`. Therefore:
 
----
-
-## 13. 1.0.2 架构整理摘要
-
-| 旧 | 新 |
-|----|-----|
-| `DependencySweepMixin` 仅 sweep | **ObxObserver**：内联 proxy 依赖表 + sweep |
-| Rx 混放 bindStream | Rx 无依赖表；**bindStream → linkSubscription** |
-| Obx 自建 subscriptions | **ObxObserver** 独占 proxy 依赖表 |
-| `ObxDependencyHost` | **`ObxObserver`**（直连 rebuild，无 void relay） |
-| `RxSubscriptionMixin` | **`RxSubjectMixin`** |
-| 公开 `RxNotifier` typedef | **`RxProxyContract`** 子契约（同文件于 `RxInterface`） |
-| 集合 mixin 重复 | **`RxCollection`** 基类 |
+- They do not trigger Obx-style dependency registration.
+- They are not affected by Obx sweep.
+- You must call `worker.dispose()` on page dispose, or use `RxLifecycleMixin`.
 
 ---
 
-## 14. 项目结构
+## 11. Lifecycle
+
+| API                   | Behavior                                                                                   |
+|-----------------------|--------------------------------------------------------------------------------------------|
+| `Rx.close()`          | `ReactiveMixin` cancels linked subscriptions → `RxSubjectMixin` closes `subject`           |
+| `ObxObserver.close()` | `_closed = true`; clears dependencies and listen callbacks                                 |
+| `RxLifecycleMixin`    | Automatically `close`s registered Rx / subscriptions / Workers when the Widget is disposed |
+
+---
+
+## 12. 1.0.3 API Narrowing
+
+- Removed the **`RxInterface.proxy` public setter**; production push uses the private *
+  *`_buildWithProxy`**, and `notifyDependents` adds a `canUpdate` assertion on top of it.
+- Public API keeps **`get proxy`** (read-only) and **`notifyDependents`** (for Obx).
+- Tests use **`testDependents`** / **`resetProxy`** (`@visibleForTesting`, delegating to
+  `_buildWithProxy`).
+
+---
+
+## 13. 1.0.2 Architecture Refactor Summary
+
+| Old                               | New                                                              |
+|-----------------------------------|------------------------------------------------------------------|
+| `DependencySweepMixin` only sweep | **ObxObserver**: inline proxy dependency table + sweep           |
+| Rx mixed `bindStream`             | Rx has no dependency table; **bindStream → linkSubscription**    |
+| Obx managed its own subscriptions | **ObxObserver** exclusively owns the proxy dependency table      |
+| `ObxDependencyHost`               | **`ObxObserver`** (directly connected to rebuild, no void relay) |
+| `RxSubscriptionMixin`             | **`RxSubjectMixin`**                                             |
+| Public `RxNotifier` typedef       | **`RxProxyContract`** sub-contract (same file as `RxInterface`)  |
+| Repeated collection mixins        | **`RxCollection`** base class                                    |
+
+---
+
+## 14. Project Structure
 
 ```
 lib/
 ├── ns_obx.dart
 └── src/
     ├── rx/
-    │   ├── core/          # RxInterface（含 RxProxyContract）, RxSubjectMixin, ReactiveMixin
+    │   ├── core/          # RxInterface (includes RxProxyContract), RxSubjectMixin, ReactiveMixin
     │   └── types/         # Rx, RxCollection, RxList, RxMap, RxSet, primitives
     ├── signals/signal.dart
     ├── workers/workers.dart
-    └── obx/               # Obx, ObxObserver, ObxValue, ObxLifecycleMixin
+    ├── lifecycle/         # RxLifecycleMixin, RxDisposable
+    └── obx/               # Obx, ObxObserver, ObxValue
 ```
 
 ---
 
-## 15. 延伸阅读
+## 15. Further Reading
 
-- [README.md](README.md) — 安装、API、示例
-- [CHANGELOG.md](CHANGELOG.md) — 版本变更
-- [example/](../../example/) — 可运行 Demo（含 **Obx** Tab）
+- [README.md](README.md) — Installation, API, examples
+- [CHANGELOG.md](CHANGELOG.md) — Version history
+- [example/](example/lib/main.dart) — Runnable demo (includes **Obx** Tab)

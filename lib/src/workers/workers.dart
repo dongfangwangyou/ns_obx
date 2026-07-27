@@ -5,7 +5,7 @@ import '../rx/core/rx_interface.dart';
 /// 可释放的 Rx 副作用监听句柄
 ///
 /// 由 [ever]、[once]、[debounce]、[interval] 返回，不再使用时调用 [dispose] 取消订阅。
-/// 可配合 `ObxLifecycleMixin.worker()` 在页面 dispose 时自动释放。
+/// 可配合 `RxLifecycleMixin.worker()` 在页面 dispose 时自动释放。
 class Worker {
   StreamSubscription<dynamic>? _subscription;
   final _TimerHolder? _timerHolder;

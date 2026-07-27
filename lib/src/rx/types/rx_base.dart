@@ -12,7 +12,7 @@ abstract class _RxImpl<T> extends RxInterface<T>
   }
 
   void addError(Object error, [StackTrace? stackTrace]) {
-    subject.addError(error, stackTrace);
+    subject.emitError(error, stackTrace);
   }
 
   /// 将当前值通过 [mapper] 映射为新的 Stream
@@ -27,15 +27,19 @@ abstract class _RxImpl<T> extends RxInterface<T>
 
   /// 基于当前值创建新的响应式对象
   ///
-  /// 派生 Rx [close] 时会自动取消对父 Rx 的 listen，避免泄漏。
+  /// 派生 Rx [close] 时会自动取消对父 Rx 的 listen；父 Rx [close] 时也会自动
+  /// [close] 派生 Rx，避免在父级生命周期结束后继续泄漏派生对象。
   Rx<R> select<R>(R Function(T value) selector) {
     final result = Rx<R>(selector(value));
     result.linkSubscription(
-      listen((val) {
-        if (!result.subject.isClosed) {
-          result.value = selector(val);
-        }
-      }),
+      listen(
+        (val) {
+          if (!result.subject.isClosed) {
+            result.value = selector(val);
+          }
+        },
+        onDone: result.close,
+      ),
     );
     return result;
   }

@@ -1,44 +1,49 @@
+[简体中文](README_CN.md)
+
 # ns_obx
 
 [![pub version](https://img.shields.io/pub/v/ns_obx)](https://pub.dev/packages/ns_obx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**轻量级** **高性能** Flutter **响应式**状态管理库。从 GetX 响应式核心剥离重构，保留 `.obs` + `Obx` 用法，修复多项历史问题，零第三方依赖，打包体积 **&lt;15KB**。
+A **lightweight**, **high-performance**, **reactive** state management library for Flutter.
+Refactored from the GetX reactive core, it keeps the `.obs` + `Obx` API, fixes several historical
+issues, has zero third-party dependencies, and a bundle size of **<15KB**.
 
-> 只做「Rx 变量 + Obx 组件 + 生命周期工具」，不含路由 / DI / 国际化。用过 GetX 响应式层可几乎零成本迁移。
-
----
-
-## 特性
-
-| | |
-|---|---|
-| **极小体积** | 打包后体积 &lt;15KB |
-| **零依赖** | 仅依赖 Flutter SDK |
-| **类型安全** | 完整泛型与编译时类型检查 |
-| **高性能** | 字段级 rebuild；同帧多 Rx 变化合并为一次 `setState` |
-| **GetX 兼容** | `.obs`、`Obx`、`RxList/Map/Set` 用法一致 |
-| **Workers** | `ever` / `once` / `debounce`（leading/trailing）/ `interval` |
-| **Signal** | 内置轻量事件原语，可脱离 Obx 单独使用 |
-| **生命周期** | `ObxLifecycleMixin` 自动释放 Rx / 订阅 / Worker |
-| **集合优化** | 批量 `update` / `batchUpdate`、no-op 跳过无效通知 |
+> It only does "Rx variables + Obx widget + lifecycle utilities"; no routing / DI /
+> internationalization. If you've used the GetX reactive layer, migration is almost effortless.
 
 ---
 
-## 环境要求
+## Features
 
-| | 版本 |
-|---|---|
+|                              |                                                                                                 |
+|------------------------------|-------------------------------------------------------------------------------------------------|
+| **Tiny size**                | <15KB after bundling                                                                            |
+| **Zero deps**                | Only depends on the Flutter SDK                                                                 |
+| **Type-safe**                | Full generics and compile-time type checking                                                    |
+| **High performance**         | Field-level rebuilds; multiple Rx changes in the same frame are merged into a single `setState` |
+| **GetX-compatible**          | Same `.obs`, `Obx`, `RxList/Map/Set` APIs                                                       |
+| **Workers**                  | `ever` / `once` / `debounce` (leading/trailing) / `interval`                                    |
+| **Signal**                   | Built-in lightweight event primitive; usable without Obx                                        |
+| **Lifecycle**                | `RxLifecycleMixin` automatically disposes Rx / subscriptions / Workers                          |
+| **Collection optimizations** | Batch `update` / `batchUpdate`, no-op skips invalid notifications                               |
+
+---
+
+## Requirements
+
+|          | Version          |
+|----------|------------------|
 | Dart SDK | `>=3.4.0 <4.0.0` |
-| Flutter | `>=3.13.0` |
+| Flutter  | `>=3.13.0`       |
 
 ---
 
-## 安装
+## Installation
 
 ```yaml
 dependencies:
-  ns_obx: ^1.0.2
+  ns_obx: ^1.0.5
 ```
 
 ```bash
@@ -47,7 +52,7 @@ flutter pub get
 
 ---
 
-## 快速开始
+## Quick Start
 
 ```dart
 import 'package:flutter/material.dart';
@@ -78,74 +83,76 @@ class MyApp extends StatelessWidget {
 }
 ```
 
-**要点：** `Obx` 的 builder 内**只读** `.value`；改值放在 `onPressed` 等回调里。
+**Key point:** inside the `Obx` builder, **only read** `.value`; mutate values inside callbacks such
+as `onPressed`.
 
 ---
 
-## 目录
+## Table of Contents
 
-- [导出内容](#导出内容)
-- [核心模块](#核心模块)
-- [API 速查](#api-速查)
-- [页面级生命周期](#页面级生命周期-rxautodisposemixin)
-- [GetX 迁移](#getx-迁移)
-- [选型对比](#选型对比)
-- [最佳实践](#最佳实践)
-- [示例应用](#示例应用)
-- [进阶：Obx 依赖追踪与 rebuild](#进阶obx-依赖追踪与-rebuild)
-- [更新日志](#更新日志)
-
----
-
-## 导出内容
-
-`import 'package:ns_obx/ns_obx.dart';` 包含：
-
-| 模块 | 主要内容 |
-|------|----------|
-| **Rx** | `Rx<T>`、`RxBool/Int/Double/String`、可空变体、`RxCollection`、`RxList/Map/Set`、`.obs`、`RxCondition` |
-| **Obx** | `Obx`、`ObxValue`、`ObxWidget`、`ObxLifecycleMixin` |
-| **Workers** | `ever`、`once`、`debounce`、`interval`、`Worker` |
-| **Signal** | `Signal<T>`、`SignalSubscription`（事件通知，无需 Obx） |
+- [Exports](#exports)
+- [Core Modules](#core-modules)
+- [API Cheatsheet](#api-cheatsheet)
+- [Page-level Lifecycle](#page-level-lifecycle-rxlifecyclemixin)
+- [Migrating from GetX](#migrating-from-getx)
+- [Comparison](#comparison)
+- [Best Practices](#best-practices)
+- [Example Apps](#example-apps)
+- [Advanced: Obx Dependency Tracking and Rebuild](#advanced-obx-dependency-tracking-and-rebuild)
+- [Changelog](#changelog)
 
 ---
 
-## 核心模块
+## Exports
+
+`import 'package:ns_obx/ns_obx.dart';` includes:
+
+| Module      | Main contents                                                                                                   |
+|-------------|-----------------------------------------------------------------------------------------------------------------|
+| **Rx**      | `Rx<T>`, `RxBool/Int/Double/String`, nullable variants, `RxCollection`, `RxList/Map/Set`, `.obs`, `RxCondition` |
+| **Obx**     | `Obx`, `ObxValue`, `ObxWidget`, `RxLifecycleMixin`                                                              |
+| **Workers** | `ever`, `once`, `debounce`, `interval`, `Worker`                                                                |
+| **Signal**  | `Signal<T>`, `SignalSubscription` (event notifications, no Obx required)                                        |
+
+---
+
+## Core Modules
 
 ```
-Signal（事件广播，可选独立使用）
-  └── Rx（响应式状态 + subject）
+Signal (event broadcast, optionally standalone)
+  └── Rx (reactive state + subject)
         ├── RxCollection → RxList / RxMap / RxSet
-        ├── Obx（UI 依赖追踪 + rebuild）
-        └── Workers（Rx 副作用：防抖 / 节流 / 监听）
+        ├── Obx (UI dependency tracking + rebuild)
+        └── Workers (Rx side effects: debounce / throttle / listen)
 ```
 
-| 需求 | 选用 |
-|------|------|
-| UI 随数据变 | **Rx + Obx** |
-| 防抖搜索、日志、一次性回调 | **Workers** 或 `listen()` |
-| 纯事件、不驱动 UI | **Signal** |
-| 页面销毁自动清理 | **ObxLifecycleMixin** |
+| Need                                          | Choose                    |
+|-----------------------------------------------|---------------------------|
+| UI reacts to data                             | **Rx + Obx**              |
+| Debounced search, logging, one-shot callbacks | **Workers** or `listen()` |
+| Pure events, not driving UI                   | **Signal**                |
+| Auto-cleanup when page is destroyed           | **RxLifecycleMixin**      |
 
 ---
 
-## API 速查
+## API Cheatsheet
 
-### 响应式变量
+### Reactive Variables
 
 ```dart
-final count = 0.obs;              // RxInt
-final name = 'hello'.obs;         // RxString
-final flag = true.obs;            // RxBool
-final user = Rx<User>(User());    // Rx<T>
+final count = 0.obs; // RxInt
+final name = 'hello'.obs; // RxString
+final flag = true.obs; // RxBool
+final user = Rx<User>(User()); // Rx<T>
 
-final n = RxnInt();               // Rx<int?>，初始 null
-final list = <int>[1, 2].obs;     // RxList
-final map = {'a': 1}.obs;         // RxMap
-final set = {1, 2}.obs;           // RxSet
+final n = RxnInt(); // Rx<int?>, initially null
+final list = <int>[1, 2].obs; // RxList
+final map = {'a': 1}.obs; // RxMap
+final set = {1, 2}.obs; // RxSet
 ```
 
-可空类型扩展（`RxNullable` / `RxnInt` 等）：`isNull`、`let`、`ifNull`、`getOrElse`、`getOrThrow`。
+Nullable type extensions (`RxNullable` / `RxnInt` etc.): `isNull`, `let`, `ifNull`, `getOrElse`,
+`getOrThrow`.
 
 ```dart
 final title = RxStringNullable();
@@ -156,43 +163,43 @@ title.let((v) => print(v.length));
 ### Obx / ObxValue
 
 ```dart
-// 只读展示
+// Read-only display
 Obx(() => Text('${count.value}'));
 
-// 同帧内改多个 Rx，Obx 只 rebuild 一次
+// Multiple Rx mutated in the same frame: Obx rebuilds only once
 void onSubmit() {
   loading.value = true;
   error.value = null;
-  // 两次赋值 → 一次 setState
+  // Two assignments → one setState
 }
 
-// 局部 Rx 绑定控件
+// Locally bound Rx widget
 ObxValue<RxBool>(
   (data) => Switch(value: data.value, onChanged: (v) => data.value = v),
   false.obs,
 );
 ```
 
-### 读写与工具
+### Read/Write and Utilities
 
 ```dart
-count.value = 1;                  // 写（触发订阅者）
-count.value++;                    // 读 + 写
-print(count.peek);                // 读当前值，不注册 Obx 依赖
+count.value = 1; // write (notifies subscribers)
+count.value++; // read + write
+print(count.peek); // read current value without registering an Obx dependency
 
-user.update((u) => u.name = 'Bob');           // 改对象内部字段
-final nameRx = user.select((u) => u.name);    // 派生 Rx（需管理 close）
-count.bindStream(stream);         // 返回 StreamSubscription
-list.toList(); map.toMap(); set.toSet();  // 快照，不注册依赖
+user.update((u) => u.name = 'Bob'); // mutate internal object fields
+final nameRx = user.select((u) => u.name); // derived Rx (must manage close)
+count.bindStream(stream); // returns StreamSubscription
+list.toList(); map.toMap(); set.toSet(); // snapshots, do not register dependencies
 ```
 
-### 集合批量更新
+### Collection Batch Updates
 
-| 类型 | API | 说明 |
-|------|-----|------|
-| `RxList` | `update(fn)` | 回调内多次修改，合并为一次通知 |
-| `RxMap` | `batchUpdate(fn)` | 同上（避免与 `Map.update` 冲突） |
-| `RxSet` | `update(fn)` | 回调参数为 `Set<E>` |
+| Type     | API               | Description                                                     |
+|----------|-------------------|-----------------------------------------------------------------|
+| `RxList` | `update(fn)`      | Multiple mutations inside callback merged into one notification |
+| `RxMap`  | `batchUpdate(fn)` | Same as above (avoids collision with `Map.update`)              |
+| `RxSet`  | `update(fn)`      | Callback receives `Set<E>`                                      |
 
 ```dart
 list.update((items) {
@@ -206,48 +213,109 @@ map.batchUpdate((m) {
 });
 ```
 
-集合还支持 `assign` / `assignAll`、`addIf` / `addAllIf`；写操作在内容未变时会跳过无效 `refresh`。
+Collections also support `assign` / `assignAll`, `addIf` / `addAllIf`; write operations skip invalid
+`refresh` when the content hasn't changed.
 
-`addIf` / `addAllIf` 的 `condition` 可为 `bool` 或延迟求值的 `RxCondition`（`bool Function()`）：
+`addIf` / `addAllIf` accept `condition` as either `bool` or a lazily evaluated `RxCondition` (
+`bool Function()`):
 
 ```dart
 list.addIf(() => user.value.isAdmin, item);
 list.addAllIf(true, [1, 2, 3]);
 ```
 
-### Signal（独立事件通知）
+### Signal (Standalone Event Notifications)
 
-无需 Obx，适合模块内 pub-sub、生命周期钩子等：
+No Obx required; suitable for in-module pub-sub, lifecycle hooks, etc.:
 
 ```dart
 final events = Signal<String>();
 final sub = events.listen((msg) => print(msg));
-events.add('hello');
+events.emit('hello');
 await sub.cancel();
 events.close();
 ```
 
-| API | 说明 |
-|-----|------|
-| `listen` / `add` | 订阅与发送 |
-| `pause` / `resume` / `cancel` | 订阅控制 |
-| `close` | 关闭；`value` 保留最后一条 |
-| `stream` | 适配 `Stream<T>` |
+| API                           | Description                        |
+|-------------------------------|------------------------------------|
+| `listen` / `emit`             | Subscribe and emit                 |
+| `pause` / `resume` / `cancel` | Subscription control               |
+| `close`                       | Close; `value` keeps the last item |
+| `stream`                      | Adapts to `Stream<T>`              |
 
-> Signal 是新订阅者不 replay 的 hot 事件源；无订阅者时 `add` 只更新 `value` 不遍历 listener；需要「当前值 + UI 更新」请用 Rx。
+> Signal is a hot event source that does not replay to new subscribers; when there are no
+> subscribers, `emit` only updates `value` and does not iterate listeners. Use Rx when you need "
+> current value + UI updates".
+
+#### Using Signal to Implement a Type-Safe EventChannel
+
+Signal's non-replay behavior makes it ideal for one-shot event buses. Here is a zero-dependency,
+fully type-safe `EventChannel<T>`:
+
+```dart
+class EventChannel<T> {
+  final Signal<T> _signal = Signal<T>();
+
+  /// Emit an event
+  void emit(T event) => _signal.emit(event);
+
+  /// Subscribe to events
+  SignalSubscription<T> on(void Function(T event) handler) =>
+      _signal.listen(handler);
+
+  /// Close the channel
+  void close() => _signal.close();
+}
+```
+
+Usage example:
+
+```dart
+// 1. Define business event channels
+class AuthEvents {
+  AuthEvents._();
+
+  static final logout = EventChannel<LogoutEvent>();
+  static final sessionExpired = EventChannel<SessionExpiredEvent>();
+}
+
+// 2. Subscribe (usually in initState / route listeners)
+late final SignalSubscription<LogoutEvent> _sub;
+
+@override
+void initState() {
+  super.initState();
+  _sub = AuthEvents.logout.on((event) {
+    Navigator.of(context).pushReplacementNamed('/login');
+  });
+}
+
+@override
+void dispose() {
+  _sub.cancel();
+  super.dispose();
+}
+
+// 3. Emit events (from anywhere)
+AuthEvents.logout.emit(LogoutEvent());
+```
+
+> Why not Rx? Rx replays the current value to new subscribers, which can easily lead to duplicate
+> event consumption; Signal only notifies subscribers of events that occur after subscription, making
+> it more suitable for "command / side-effect" style communication.
 
 ### Workers
 
 ```dart
-class _PageState extends State<Page> with ObxLifecycleMixin {
+class _PageState extends State<Page> with RxLifecycleMixin {
   late final query = rx(''.obs);
 
   @override
   void initState() {
     super.initState();
-    // 尾随 debounce：停止输入 300ms 后搜索（默认）
+    // Trailing debounce: search 300ms after typing stops (default)
     worker(debounce(query, _search, time: const Duration(milliseconds: 300)));
-    // leading debounce：首次输入立即搜索，窗口内后续忽略
+    // Leading debounce: search immediately on first input, ignore subsequent within window
     worker(debounce(query, _preview, leading: true, time: const Duration(milliseconds: 300)));
     worker(ever(count, (v) => print(v)));
     worker(once(count, (_) => _initOnce()));
@@ -255,19 +323,19 @@ class _PageState extends State<Page> with ObxLifecycleMixin {
 }
 ```
 
-| API | 行为 |
-|-----|------|
-| `ever` | 每次变化调用（不含初始值） |
-| `once` | 首次变化后自动取消 |
-| `debounce` | 默认**尾随**：静默 `time` 后调用最后一次值；`leading: true` 为**leading**（窗口内首次立即调用） |
-| `interval` | 每 `time` 至多一次（节流，窗口内首次立即触发） |
+| API        | Behavior                                                                                                                                  |
+|------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| `ever`     | Called on every change (not including the initial value)                                                                                  |
+| `once`     | Auto-cancels after the first change                                                                                                       |
+| `debounce` | Default **trailing**: calls the latest value after `time` of silence; `leading: true` for **leading** (first in window fires immediately) |
+| `interval` | At most once per `time` (throttle; first in window fires immediately)                                                                     |
 
 ---
 
-## 页面级生命周期（ObxLifecycleMixin）
+## Page-level Lifecycle (RxLifecycleMixin)
 
 ```dart
-class _PageState extends State<Page> with ObxLifecycleMixin {
+class _PageState extends State<Page> with RxLifecycleMixin {
   late final count = rx(0.obs);
 
   @override
@@ -282,20 +350,20 @@ class _PageState extends State<Page> with ObxLifecycleMixin {
   Widget build(BuildContext context) {
     return Obx(() => Text('${count.value}'));
   }
-  // dispose 时自动 close Rx、cancel 订阅、dispose Worker
+  // On dispose, automatically closes Rx, cancels subscriptions, and disposes Workers
 }
 ```
 
-| 方法 | 作用 |
-|------|------|
-| `rx(reactive)` | 注册 Rx，dispose 时 `close` |
-| `subscription(sub)` | 注册 `StreamSubscription` |
-| `listen(rx, fn)` | 监听 Rx 并自动追踪订阅 |
-| `worker(w)` | 注册 Worker |
+| Method              | Purpose                                         |
+|---------------------|-------------------------------------------------|
+| `rx(reactive)`      | Register an Rx to `close` on dispose            |
+| `subscription(sub)` | Register a `StreamSubscription`                 |
+| `listen(rx, fn)`    | Listen to an Rx and auto-track the subscription |
+| `worker(w)`         | Register a Worker                               |
 
 ---
 
-## GetX 迁移
+## Migrating from GetX
 
 ```dart
 // import 'package:get/get.dart';
@@ -305,54 +373,152 @@ final count = 0.obs;
 Obx(() => Text('${count.value}'));
 ```
 
-主要差异：ns_obx **不含** `GetMaterialApp` / 路由 / `Get.put`；需要 DI 请自行选型或搭配生态内 DI 方案。
+Main difference: ns_obx **does not include** `GetMaterialApp`, routing, or `Get.put`; choose your
+own DI solution or pair with an ecosystem DI package.
 
 ---
 
-## 选型对比
+## Comparison
 
-| | ns_obx | Provider / Riverpod | GetX |
-|---|:---:|:---:|:---:|
-| 体积 | ~15KB | 50KB+ | 200KB+ |
-| 响应粒度 | **字段级** | Widget 级 | 字段级 |
-| DI / 路由 | ❌ | ✅ / 部分 | ✅ |
-| 学习成本 | 极低（GetX 用户零成本） | 低~中 | 中 |
+|                        |               ns_obx               | Provider / Riverpod |    GetX     |
+|------------------------|:----------------------------------:|:-------------------:|:-----------:|
+| Size                   |               ~15KB                |        50KB+        |   200KB+    |
+| Reactivity granularity |          **Field-level**           |    Widget-level     | Field-level |
+| DI / Routing           |                 ❌                  |     ✅ / partial     |      ✅      |
+| Learning curve         | Minimal (zero cost for GetX users) |     Low~medium      |   Medium    |
 
 ```dart
-// Provider：改 name 时整个 Consumer rebuild
-// ns_obx：每个 Obx 只依赖自己读到的 Rx
-Obx(() => Text(user.value.name));   // 只重建这一行
-Obx(() => Text('${user.value.age}')); // age 变才重建
+// Provider: changing name rebuilds the whole Consumer
+// ns_obx: each Obx only depends on the Rx it reads
+Obx(() => Text(user.value.name)); // only this line rebuilds
+Obx(() => Text('${user.value.age}')); // rebuilds only when age changes
 ```
 
-**适合：** 局部状态、GetX 迁移、插件/SDK、与 Riverpod 等 DI 组合。  
-**不适合：** 需要内置 DI/路由/编译时安全的大型架构（选 Riverpod 等）。
+**Good for:** local state, GetX migration, plugins/SDKs, combining with DI solutions like
+Riverpod.  
+**Not for:** large architectures that need built-in DI/routing/compile-time safety (choose Riverpod,
+etc.).
 
 ---
 
-## 最佳实践
+## Best Practices
 
-| ✅ 推荐 | ❌ 避免 |
-|---------|---------|
-| Obx builder 内**只读** `.value` | builder 内写 `count.value++` |
-| 改值放在 `onPressed` / Controller | async 回调里读 `.value` 期望 Obx 订阅 |
-| 对象字段变更用 `update()` | `user.value.name = 'x'`（引用不变不触发） |
-| 页面 Rx 用 `ObxLifecycleMixin` | 已 `close()` 的 Rx 仍被 Obx 使用 |
-| 副作用用 `peek` / Workers / `listen` | Obx 内用 `peek` 期望 rebuild |
-| 集合多次修改用 `update` / `batchUpdate` | 循环改集合触发多次 rebuild |
-| `select()` 派生 Rx 随页面 `close` | 派生 Rx 泄漏不释放 |
+| ✅ Recommended                                                  | ❌ Avoid                                                            |
+|----------------------------------------------------------------|--------------------------------------------------------------------|
+| Only **read** `.value` inside the Obx builder                  | Writing `count.value++` inside the builder                         |
+| Mutate values inside `onPressed` / Controller                  | Reading `.value` inside async callbacks expecting Obx subscription |
+| Use `update()` for object field changes                        | `user.value.name = 'x'` (reference unchanged, no trigger)          |
+| Use `RxLifecycleMixin` for page-level Rx                       | Using an Rx after `close()` inside Obx                             |
+| Use `peek` / Workers / `listen` for side effects               | Using `peek` inside Obx expecting rebuild                          |
+| Use `update` / `batchUpdate` for multiple collection mutations | Modifying collections in a loop triggering multiple rebuilds       |
+| `select()` derived Rx should `close` with the page             | Leaking derived Rx without disposal                                |
 
-**集合粒度：** 读 `list[0]` 或 `map['k']` 订阅的是**整个容器**；单项精细更新请拆成多个 Rx 或多个 Obx。
+**Collection granularity:** reading `list[0]` or `map['k']` subscribes to the **whole container**;
+for fine-grained single-item updates, split into multiple Rx variables or multiple Obx widgets.
 
-**条件分支：** Obx 内 `if/else` 切换后，旧分支的 Rx 依赖会自动移除（增量依赖扫描）。
+**Conditional branches:** when `if/else` branches switch inside Obx, stale Rx dependencies from the
+old branch are automatically removed (incremental dependency sweep).
 
-更多细节见仓库 **[example/](../../example/)** 中 **Obx** Tab（集合、`RxCondition`、条件分支 sweep、`bindStream`）。
+See the **[example/](../../example/)** directory in the repo, especially the **Obx** tab (
+collections, `RxCondition`, conditional branch sweep, `bindStream`) for more details.
 
 ---
 
-## 示例应用
+## Common Pitfalls
 
-仓库根目录 **[example/](../../example/)** 为多包综合 Demo（`ns_obx` / `ns_bind` / `ns_store` / `ns_refresh`）：
+### 1. Writing `.value` inside the `Obx` builder
+
+```dart
+// ❌ Wrong: won't trigger rebuild, and may trigger an assertion
+Obx(() {
+  count.value++;
+  return Text('${count.value}');
+});
+
+// ✅ Correct: only read inside the builder
+Obx(() => Text('${count.value}'));
+```
+
+### 2. Reading `.value` in async callbacks expecting Obx subscription
+
+```dart
+// ❌ Wrong: Future callback is not in the Obx build call stack
+Obx(() => FutureBuilder(
+  future: fetch(user.value.id), // will not subscribe to user
+  builder: ...,
+));
+
+// ✅ Correct: read directly inside Obx
+Obx(() => Text('${user.value.name}'));
+```
+
+### 3. Mutating internal object fields doesn't trigger updates
+
+```dart
+// ❌ Wrong: reference unchanged
+user.value.name = 'Bob';
+
+// ✅ Correct: triggers setter / refresh
+user.update((u) => u.name = 'Bob');
+```
+
+### 4. Derived Rx leaks
+
+```dart
+// ❌ Wrong: derived won't be released with the page
+final derived = user.select((u) => u.name);
+
+// ✅ Correct: register with RxLifecycleMixin / RxDisposable
+final derived = rx(user.select((u) => u.name));
+// Or for non-Widget scopes:
+final disposable = RxDisposable();
+final derived = disposable.rx(user.select((u) => u.name));
+```
+
+### 5. Reading a collection item subscribes to the whole container
+
+```dart
+// Subscribes to the whole list; any element change rebuilds
+Obx(() => Text('${list[0]}'));
+
+// ✅ For fine-grained single-item updates, split into independent Rx
+final firstItem = 0.obs;
+Obx(() => Text('${firstItem.value}'));
+```
+
+### 6. Using an Rx in Obx after `close()`
+
+```dart
+// ❌ Wrong: Obx will read an invalid state after count is closed
+count.close();
+return Obx(() => Text('${count.value}'));
+
+// ✅ Correct: let the lifecycle mixin close everything on dispose
+class _PageState extends State<Page> with RxLifecycleMixin { ... }
+```
+
+---
+
+## Example Apps
+
+### Minimal Example (Recommended for Getting Started)
+
+The **[example/](./example/)** directory inside the package provides a minimal runnable app that
+only depends on `ns_obx`:
+
+```bash
+cd dependence/ns_obx/example
+flutter pub get
+flutter run
+```
+
+Includes **Counter** (`.obs` + `Obx`) and **Search** (`debounce` + `RxLifecycleMixin`) pages.
+
+### Full Integrated Demo
+
+The repo root **[example/](../../example/)** is a multi-package integrated demo (`ns_obx` /
+`ns_bind` / `ns_store` /
+`ns_refresh`):
 
 ```bash
 cd example
@@ -360,55 +526,60 @@ flutter pub get
 flutter run
 ```
 
-| Tab | 演示内容 |
-|-----|----------|
-| Counter | `Obx`、`.obs`、多类型 Rx、`RxList` 历史（via ns_bind） |
-| Users | 列表与表单响应式（via ns_bind） |
-| BindScope | 作用域与生命周期（via ns_bind） |
-| Store | 分页 Store（via ns_store） |
-| Refresh | 下拉刷新分页（via ns_refresh） |
-| **Obx** | **ns_obx 专项**：集合 `update`/`addIf`、`RxCondition`、条件分支 sweep、`bindStream`、同帧合并 |
+| Tab       | Content shown                                                                                                             |
+|-----------|---------------------------------------------------------------------------------------------------------------------------|
+| Counter   | `Obx`, `.obs`, multi-type Rx, `RxList` history (via ns_bind)                                                              |
+| Users     | List and form reactivity (via ns_bind)                                                                                    |
+| BindScope | Scoping and lifecycle (via ns_bind)                                                                                       |
+| Store     | Pagination store (via ns_store)                                                                                           |
+| Refresh   | Pull-to-refresh pagination (via ns_refresh)                                                                               |
+| **Obx**   | **ns_obx specific**: collection `update`/`addIf`, `RxCondition`, conditional branch sweep, `bindStream`, same-frame merge |
 
 ---
 
-## 进阶：Obx 依赖追踪
+## Advanced: Obx Dependency Tracking
 
-- **增量 sweep**：`ObxObserver.begin/endDependencySweep` 移除 stale 依赖
-- **两类订阅**：Obx 读 `.value` / `readTracked` 走 proxy；`bindStream` / `select` 走 `ReactiveMixin.linkSubscription`
-- **同帧合并**：同帧多 Rx 变化合并为一次 `setState`
+- **Incremental sweep:** `ObxObserver.begin/endDependencySweep` removes stale dependencies
+- **Two subscription types:** Obx reading `.value` / `readTracked` goes through proxy;
+  `bindStream` / `select` goes through `ReactiveMixin.linkSubscription`
+- **Same-frame merge:** multiple Rx changes in the same frame are merged into a single `setState`
 
-完整分层、数据流与 1.0.2 架构说明见 **[ARCHITECTURE.md](ARCHITECTURE.md)**。
+For the full layering, data flow, and 1.0.2 architecture notes, see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ---
 
-## 项目结构
+## Project Structure
 
 ```
 lib/
-├── ns_obx.dart              # 统一导出
+├── ns_obx.dart              # Unified exports
 └── src/
-    ├── rx/                  # RxInterface、RxCollection、RxSubjectMixin、ReactiveMixin
-    ├── signals/signal.dart  # Signal 事件原语
-    ├── workers/workers.dart # Workers 副作用
-    └── obx/                 # Obx、ObxObserver、ObxValue、ObxLifecycleMixin
+    ├── rx/                  # RxInterface, RxCollection, RxSubjectMixin, ReactiveMixin
+    ├── signals/signal.dart  # Signal event primitive
+    ├── workers/workers.dart # Workers side effects
+    ├── lifecycle/           # RxLifecycleMixin, RxDisposable
+    └── obx/                 # Obx, ObxObserver, ObxValue
 ```
 
 ---
 
-## 更新日志
+## Changelog
 
-详见 [CHANGELOG.md](CHANGELOG.md)。
+See [CHANGELOG.md](CHANGELOG.md).
 
-**1.0.2** — `RxProxyContract`、`RxCollection` 基类、`ObxObserver` 内联 proxy 依赖表、`linkSubscription` 迁入 `ReactiveMixin`。
+**1.0.2** — `RxProxyContract`, `RxCollection` base class, inline proxy dependency table in
+`ObxObserver`, `linkSubscription` moved into `ReactiveMixin`.
 
-**1.0.1** — Obx 同帧 rebuild 合并、Signal 热路径优化、`debounce(leading: true)`、`RxCondition`。
+**1.0.1** — Obx same-frame rebuild merge, Signal hot-path optimization, `debounce(leading: true)`,
+`RxCondition`.
 
-**1.0.0** — 首个正式版：Obx 增量依赖扫描、集合写操作与批量 API、Workers、`peek`。
+**1.0.0** — First stable release: Obx incremental dependency scan, collection write operations and
+batch APIs, Workers, `peek`.
 
 ---
 
-## 许可证
+## License
 
 [MIT License](LICENSE)
 
-欢迎 Issue 与 Pull Request。
+Issues and Pull Requests are welcome.

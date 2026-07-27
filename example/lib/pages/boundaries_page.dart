@@ -10,7 +10,7 @@ class BoundariesPage extends StatefulWidget {
 }
 
 class _BoundariesPageState extends State<BoundariesPage>
-    with RxAutoDisposeMixin {
+    with RxLifecycleMixin {
   // select 生命周期：父 Rx 与派生 Rx 均用 rx() 注册
   late final user = rx(Rx(_DemoUser(name: 'Alice', score: 10)));
   late final scoreRx = rx(user.select((u) => u.score));
@@ -85,7 +85,7 @@ class _BoundariesPageState extends State<BoundariesPage>
             ),
           ),
           const SizedBox(height: 24),
-          _sectionTitle('3. select 生命周期（RxAutoDisposeMixin）'),
+          _sectionTitle('3. select 生命周期（RxLifecycleMixin）'),
           const SizedBox(height: 8),
           _card(
             child: Column(

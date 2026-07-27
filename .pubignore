@@ -1,0 +1,18 @@
+# 开发/构建产物
+example/
+docs/
+build/
+.dart_tool/
+.packages
+pubspec_overrides.yaml
+*.iml
+.idea/
+.vscode/
+
+# 源码管理
+.git/
+.gitignore
+
+# 测试覆盖率
+coverage/
+*.lcov

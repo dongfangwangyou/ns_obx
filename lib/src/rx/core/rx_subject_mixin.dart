@@ -16,6 +16,9 @@ mixin RxSubjectMixin<T> implements RxProxyContract<T> {
   @override
   bool get canUpdate => false;
 
+  /// subject 是否已关闭
+  bool get isClosed => subject.isClosed;
+
   /// Proxy 依赖由 ObxObserver 登记；Rx 发布侧不实现 relay。
   @override
   void addListener(Signal<T> signal) {}

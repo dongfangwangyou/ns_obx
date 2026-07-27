@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ns_obx/ns_obx.dart';
 
-/// Demonstrates Workers: ever, once, debounce, interval + RxAutoDisposeMixin.worker().
+/// Demonstrates Workers: ever, once, debounce, interval + RxLifecycleMixin.worker().
 class WorkersPage extends StatefulWidget {
   const WorkersPage({super.key});
 
@@ -9,7 +9,7 @@ class WorkersPage extends StatefulWidget {
   State<WorkersPage> createState() => _WorkersPageState();
 }
 
-class _WorkersPageState extends State<WorkersPage> with RxAutoDisposeMixin {
+class _WorkersPageState extends State<WorkersPage> with RxLifecycleMixin {
   late final _counter = rx(0.obs);
   late final _query = rx(''.obs);
   late final _onceFlag = rx(false.obs);

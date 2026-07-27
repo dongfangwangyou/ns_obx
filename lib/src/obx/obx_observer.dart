@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import '../rx/core/reactive_mixin.dart';
 import '../rx/core/rx_interface.dart';
@@ -13,11 +12,11 @@ import '../signals/signal.dart';
 /// bindStream、select 等上游订阅在 Rx 侧走 [ReactiveMixin.linkSubscription]，
 /// 不进入 [_dependencies]。
 class ObxObserver implements RxInterface<void> {
-  ObxObserver([VoidCallback? onNotify]) : _onNotify = onNotify;
-  final List<VoidCallback> _listenCallbacks = [];
+  ObxObserver([void Function()? onNotify]) : _onNotify = onNotify;
+  final List<void Function()> _listenCallbacks = [];
   final Map<Signal<dynamic>, SignalSubscription<dynamic>> _dependencies = {};
   Set<Signal<dynamic>>? _dependencySweep;
-  VoidCallback? _onNotify;
+  void Function()? _onNotify;
   bool _closed = false;
 
   bool get _mayAttach => !_closed;
@@ -44,7 +43,7 @@ class ObxObserver implements RxInterface<void> {
     if (_closed) return;
     _onNotify?.call();
     // 快照后再派发：listen() 的 cancel 会同步 remove，避免遍历时 ConcurrentModificationError
-    for (final cb in List<VoidCallback>.of(_listenCallbacks)) {
+    for (final cb in List<void Function()>.of(_listenCallbacks)) {
       cb();
     }
   }
@@ -95,7 +94,7 @@ class ObxObserver implements RxInterface<void> {
 class _ObserverStreamSubscription implements StreamSubscription<void> {
   _ObserverStreamSubscription(this._onCancel);
 
-  final VoidCallback _onCancel;
+  final void Function() _onCancel;
   bool _isPaused = false;
 
   @override
@@ -108,7 +107,7 @@ class _ObserverStreamSubscription implements StreamSubscription<void> {
   void onError(Function? handleError) {}
 
   @override
-  void onDone(VoidCallback? handleDone) {}
+  void onDone(void Function()? handleDone) {}
 
   @override
   void pause([Future<void>? resumeSignal]) => _isPaused = true;
